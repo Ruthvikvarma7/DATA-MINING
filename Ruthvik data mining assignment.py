@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[27]:
+# In[16]:
 
 
 import os
@@ -10,17 +10,19 @@ from PIL import Image
 from pathlib import Path
 import xml.etree.ElementTree as ET
 
-dog_images_dir = glob.glob(r"C:/Users/ruthv/DataMining/images/*/*")
-annotations_dir = glob.glob(r'C:/Users/ruthv/DataMining/Annotations/*/*')
-cropped_images_dir = r'C:/Users/ruthv/DataMining/cropped'
+# Update the paths to use raw strings or double backslashes
+dog_images_dir = glob.glob(r"C:\Users\ruthv\DataMining\images\*\*")
+annotations_dir = glob.glob(r"C:\Users\ruthv\DataMining\Annotations\*\*")
+cropped_images_dir = r"C:\Users\ruthv\DataMining\cropped"
 
 def get_bounding_boxes(annot):
-    tree = ET.parse(annot)
+    xml = annot
+    tree = ET.parse(xml)
     root = tree.getroot()
     objects = root.findall('object')
     bbox = []
     for o in objects:
-        bndbox = o.find('bndbox')
+        bndbox = o.find('bndbox' )
         xmin = int(bndbox.find('xmin').text)
         ymin = int(bndbox.find('ymin').text)
         xmax = int(bndbox.find('xmax').text)
@@ -29,39 +31,42 @@ def get_bounding_boxes(annot):
     return bbox
 
 def get_image(annot):
-    img_path = r'C:/Users/ruthv/DataMining/images'
-    file = os.path.normpath(annot).split(os.path.sep)
-    img_filename = os.path.join(img_path, file[-2], file[-1].replace('.xml', '.jpg'))
+    img_path = r"C:\Users\ruthv\DataMining\images"
+    file = annot.split('\\')
+    img_filename = os.path.join(img_path, file[-2], file[-1] + '.jpg')
     return img_filename
 
-print(len(dog_images_dir))
-for i in range(len(dog_images_dir)):
-    try:
-        bbox = get_bounding_boxes(annotations_dir[i])
-        dog = get_image(annotations_dir[i])
-        im = Image.open(dog)
+# Check if both dog_images_dir and annotations_dir are not empty and have the same length
+if dog_images_dir and annotations_dir and len(dog_images_dir) == len(annotations_dir):
+    print(len(dog_images_dir))
+    for dog_dir, annot_dir in zip(dog_images_dir, annotations_dir):
+        bbox = get_bounding_boxes(annot_dir)
+        dog = get_image(annot_dir)
+        try:
+            im = Image.open(dog)
+        except Exception as e:
+            print(f"Error opening image file: {dog}")
+            print(f"Error details: {e}")
+            continue
+
         print(im)
-        for j in range(len(bbox)):
-            im2 = im.crop(bbox[j])
-            im2 = im2.resize((128, 128), Image.ANTIALIAS)
+        for j, box in enumerate(bbox):
+            im2 = im.crop(box)
+            im2 = im2.resize((128, 128), Image.LANCZOS)
             new_path = dog.replace('images', 'cropped')
-            new_path, _ = os.path.splitext(new_path)
-            new_path = new_path + '-' + str(j) + '.jpg'
+            new_path = new_path.replace('.jpg', '-' + str(j) + '.jpg')
             head, tail = os.path.split(new_path)
             Path(head).mkdir(parents=True, exist_ok=True)
             im2.save(new_path)
-    except Exception as e:
-        print(f"Error processing {annotations_dir[i]}: {e}")
 
 
-# In[28]:
+# In[1]:
 
 
 import os
-import numpy as np
 import matplotlib.pyplot as plt
 from PIL import Image
-from skimage import color
+import glob
 
 # Function to get the list of images for each class
 def get_images_per_class(images_dir):
@@ -80,15 +85,6 @@ def choose_two_images_per_class(images_per_class):
         selected_images[class_name] = images[:2]
     return selected_images
 
-# Function to convert color images to grayscale
-def convert_to_grayscale(images):
-    grayscale_images = []
-    for image_path in images:
-        image = Image.open(image_path)
-        grayscale_image = color.rgb2gray(np.array(image))
-        grayscale_images.append(grayscale_image)
-    return grayscale_images
-
 # Path to the directory containing images
 dog_images_dir = glob.glob(r"C:/Users/ruthv/DataMining/images/*/*")
 
@@ -98,23 +94,19 @@ images_per_class = get_images_per_class(dog_images_dir)
 # Choose two images from each class
 selected_images = choose_two_images_per_class(images_per_class)
 
-# Convert color images to grayscale
-grayscale_images = {}
+# Display color images
 for class_name, images in selected_images.items():
-    grayscale_images[class_name] = convert_to_grayscale(images)
-
-# Display grayscale images
-for class_name, images in grayscale_images.items():
     plt.figure(figsize=(8, 4))
-    for i, image in enumerate(images, start=1):
+    for i, image_path in enumerate(images, start=1):
+        image = Image.open(image_path)
         plt.subplot(1, 2, i)
-        plt.imshow(image, cmap='gray')
+        plt.imshow(image)
         plt.title(f'{class_name} - Image {i}')
         plt.axis('off')
     plt.show()
 
 
-# In[29]:
+# In[19]:
 
 
 import os
@@ -185,7 +177,7 @@ for class_name, images in selected_images.items():
 plot_images_and_histograms(grayscale_images)
 
 
-# In[23]:
+# In[3]:
 
 
 import os
@@ -267,7 +259,7 @@ for class_name, images in grayscale_images.items():
 plot_images_and_edges(list(grayscale_images.values())[0], list(edge_images.values())[0])
 
 
-# In[5]:
+# In[11]:
 
 
 import os
@@ -328,7 +320,7 @@ def plot_images_and_edges(grayscale_images, edge_images):
     plt.show()
 
 # Path to the directory containing images
-dog_images_dir = glob.glob((r"C:/Users/ruthv/DataMining/images/*/*")
+dog_images_dir = glob.glob(r"C:/Users/ruthv/DataMining/images/*/*")
 
 # Get list of images per class
 images_per_class = get_images_per_class(dog_images_dir)
@@ -348,7 +340,7 @@ for class_name in grayscale_images.keys():
     plot_images_and_edges(grayscale_images[class_name], edge_images[class_name])
 
 
-# In[37]:
+# In[6]:
 
 
 import cv2
@@ -392,7 +384,7 @@ plt.legend()
 plt.show()
 
 
-# In[46]:
+# In[12]:
 
 
 import cv2
@@ -436,26 +428,37 @@ plt.legend()
 plt.show()
 
 
-# In[45]:
+# In[5]:
 
 
 import cv2
 import numpy as np
-from skimage import filters, exposure
+from skimage import exposure
 import matplotlib.pyplot as plt
 
-def calculate_angles(dx, dy):
-    """Calculate the angles between horizontal and vertical operators."""
-    return np.mod(np.arctan2(dy, dx), np.pi)
-
 def compute_edge_histogram(image):
-    sobel_h = filters.sobel_h(image)
-    sobel_v = filters.sobel_v(image)
-    angles = calculate_angles(sobel_h, sobel_v)
-    hist, bin_centers = exposure.histogram(image.ravel(), nbins=36, source_range='image')
+    # Convert the image to HSV color space
+    hsv_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+    
+    # Compute the edges for each channel
+    edges_h = cv2.Sobel(hsv_image[:, :, 0], cv2.CV_64F, 1, 0, ksize=3)
+    edges_s = cv2.Sobel(hsv_image[:, :, 1], cv2.CV_64F, 1, 0, ksize=3)
+    edges_v = cv2.Sobel(hsv_image[:, :, 2], cv2.CV_64F, 1, 0, ksize=3)
+    
+    # Calculate angles for each channel (you might need to adjust this based on your requirements)
+    angles_h = np.mod(np.arctan2(edges_h, 1), np.pi)
+    angles_s = np.mod(np.arctan2(edges_s, 1), np.pi)
+    angles_v = np.mod(np.arctan2(edges_v, 1), np.pi)
+    
+    # Concatenate the angles from all channels
+    angles = np.concatenate([angles_h.ravel(), angles_s.ravel(), angles_v.ravel()])
+    
+    # Compute the histogram
+    hist, bin_centers = exposure.histogram(angles, nbins=36)
+    
     return hist, bin_centers
 
-# Load one image from each class and convert them to grayscale
+# Load one image from each class
 image_paths = [
     r"C:\Users\ruthv\Downloads\images\n02113799-standard_poodle\n02113799_911.jpg",
     r"C:\Users\ruthv\Downloads\images\n02107312-miniature_pinscher\n02107312_7528.jpg",
@@ -463,18 +466,20 @@ image_paths = [
     r"C:\Users\ruthv\Downloads\images\n02096177-cairn\n02096177_8975.jpg"
     # Add paths to other images here
 ]
-grayscale_images = [cv2.imread(image_path, cv2.IMREAD_GRAYSCALE) for image_path in image_paths]
+class_labels = ["Standard Poodle", "Miniature Pinscher", "Norfolk Terrier", "Cairn"]  # Add corresponding class labels
 
-# Compute edge histograms for each grayscale image
-edge_histograms = [compute_edge_histogram(image) for image in grayscale_images]
+color_images = [cv2.imread(image_path) for image_path in image_paths]
+
+# Compute edge histograms for each color image
+edge_histograms = [compute_edge_histogram(image) for image in color_images]
 
 # Plot images with their corresponding edge histograms
-fig, axes = plt.subplots(len(grayscale_images), 2, figsize=(10, 6 * len(grayscale_images)))
+fig, axes = plt.subplots(len(color_images), 2, figsize=(10, 6 * len(color_images)))
 
-for i, (current_image, (current_hist, current_bin_centers)) in enumerate(zip(grayscale_images, edge_histograms)):
-    # Plot current image
-    axes[i, 0].imshow(current_image, cmap='gray')
-    axes[i, 0].set_title('Image')
+for i, (current_image, (current_hist, current_bin_centers)) in enumerate(zip(color_images, edge_histograms)):
+    # Plot current color image
+    axes[i, 0].imshow(cv2.cvtColor(current_image, cv2.COLOR_BGR2RGB))
+    axes[i, 0].set_title(f'{class_labels[i]} - Image')
     
     # Plot current edge histogram
     axes[i, 1].bar(current_bin_centers, current_hist, width=np.pi / 18)
@@ -524,26 +529,26 @@ print(f"Manhattan Distance: {manhattan_distance}")
 print(f"Cosine Distance: {cosine_distance}")
 
 
-# In[40]:
+# In[ ]:
 
 
 get_ipython().system('pip install opencv-python')
 
 
 
-# In[17]:
+# In[ ]:
 
 
 pip install opencv-python
 
 
-# In[19]:
+# In[ ]:
 
 
 pip install numpy
 
 
-# In[44]:
+# In[14]:
 
 
 import cv2
@@ -580,7 +585,7 @@ print(f"Manhattan Distance: {manhattan_distance}")
 print(f"Cosine Distance: {cosine_distance}")
 
 
-# In[43]:
+# In[15]:
 
 
 import cv2
@@ -617,7 +622,7 @@ print(f"Manhattan Distance: {manhattan_distance}")
 print(f"Cosine Distance: {cosine_distance}")
 
 
-# In[33]:
+# In[6]:
 
 
 import cv2
@@ -626,16 +631,32 @@ from skimage.feature import hog
 from skimage import exposure
 
 def calculate_and_display_hog(image_path):
-    grayscale_image = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
+    # Read the image in color
+    color_image = cv2.imread(image_path)
 
+    # Convert the color image to grayscale for calculating HOG features
+    grayscale_image = cv2.cvtColor(color_image, cv2.COLOR_BGR2GRAY)
+
+    # Calculate HOG features and get a visualization of the HOG descriptors
     hog_features, hog_image = hog(grayscale_image, visualize=True)
 
-    plt.figure(figsize=(8, 4))
-    plt.subplot(1, 2, 1)
-    plt.imshow(grayscale_image, cmap='gray')
-    plt.title('Original Image')
+    # Display the original color image, grayscale image, and HOG descriptors
+    plt.figure(figsize=(12, 4))
+    
+    # Plot the original color image
+    plt.subplot(1, 3, 1)
+    plt.imshow(cv2.cvtColor(color_image, cv2.COLOR_BGR2RGB))
+    plt.title('Original Color Image')
     plt.axis('off')
-    plt.subplot(1, 2, 2)
+    
+    # Plot the grayscale image
+    plt.subplot(1, 3, 2)
+    plt.imshow(grayscale_image, cmap='gray')
+    plt.title('Grayscale Image')
+    plt.axis('off')
+    
+    # Plot the HOG descriptors
+    plt.subplot(1, 3, 3)
     plt.imshow(hog_image, cmap='gray')
     plt.title('HOG Descriptors')
     plt.axis('off')
@@ -643,12 +664,12 @@ def calculate_and_display_hog(image_path):
     plt.tight_layout()
     plt.show()
 
+# Example usage with a specific image path
 new_image_path = "C:\\Users\\ruthv\\Downloads\\images\\n02094114-Norfolk_terrier\\n02094114_1232.jpg"
-
 calculate_and_display_hog(new_image_path)
 
 
-# In[42]:
+# In[17]:
 
 
 import cv2
@@ -692,10 +713,4 @@ plt.ylabel('Principal Component 2')
 plt.title('PCA Dimensionality Reduction')
 plt.legend()
 plt.show()
-
-
-# In[ ]:
-
-
-
 
